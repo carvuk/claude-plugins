@@ -1,0 +1,15 @@
+{
+  "name": "carvuk",
+  "description": "Plugins de Claude para el equipo de Carvuk.",
+  "owner": {
+    "name": "Carvuk Tech"
+  },
+  "plugins": [
+    {
+      "name": "carvuk-studio",
+      "source": "./plugins/carvuk-studio",
+      "description": "Onboarding para Mac, prototipos con el design system y pedidos a tech.",
+      "category": "productivity"
+    }
+  ]
+}

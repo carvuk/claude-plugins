@@ -1,0 +1,16 @@
+{
+  "name": "carvuk-claude-plugins",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "typecheck": "tsc -p plugins/carvuk-studio/scripts/tsconfig.json",
+    "check:shell": "bash -n plugins/carvuk-studio/scripts/onboarding.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  }
+}
