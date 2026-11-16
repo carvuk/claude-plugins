@@ -83,6 +83,7 @@ export const STUDIO_SERVER = {
   healthTimeoutMs: 5_000,
   startTimeoutMs: 180_000,
   pollIntervalMs: 2_000,
+  startAttempts: 2,
 } as const;
 
 export const STUDIO_BROWSERS = [
