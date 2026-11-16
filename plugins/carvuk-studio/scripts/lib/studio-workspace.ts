@@ -1,5 +1,5 @@
 import { execFileSync, type ExecFileSyncOptions } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { createMonorepoReadToken } from './studio-api.ts';
@@ -12,6 +12,10 @@ import { StudioError } from './studio-output.ts';
 
 const GIT_HOST_URL = 'https://github.com/';
 const STUDIO_REFERENCE_APP_PATTERN = /^carvuk-app-[a-z0-9-]+$/;
+const PARTIAL_WORKSPACE_SUFFIX = '.descargando';
+const ERROR_TAIL_LENGTH = 1200;
+const RETRY_HINT =
+  'Revisa tu conexión y vuelve a intentar. Si se repite, avisa a tech con este mensaje.';
 
 function buildGitAuthEnvironment(token: string): NodeJS.ProcessEnv {
   const credentials = Buffer.from(`x-access-token:${token}`).toString('base64');
@@ -42,13 +46,20 @@ function git(args: string[], env?: NodeJS.ProcessEnv) {
     .trim();
 }
 
+function readStderrTail(error: unknown) {
+  const stderr =
+    typeof error === 'object' && error !== null && 'stderr' in error
+      ? String((error as { stderr: unknown }).stderr)
+      : '';
+  return stderr.slice(-ERROR_TAIL_LENGTH);
+}
+
 export const hasWorkspace = () => existsSync(`${STUDIO_PATHS.workspace}/.git`);
 
-export async function cloneWorkspace() {
-  if (hasWorkspace())
-    return { workspace: STUDIO_PATHS.workspace, cloned: false };
-  const env = buildGitAuthEnvironment(await createMonorepoReadToken());
-  mkdirSync(dirname(STUDIO_PATHS.workspace), { recursive: true });
+const hasDesignApp = () =>
+  existsSync(join(STUDIO_PATHS.workspace, STUDIO_DESIGN_APP.directory));
+
+function downloadWorkspace(destination: string, env: NodeJS.ProcessEnv) {
   run(
     'git',
     [
@@ -58,11 +69,33 @@ export async function cloneWorkspace() {
       '--branch',
       STUDIO_REPOSITORY.branch,
       STUDIO_REPOSITORY.url,
-      STUDIO_PATHS.workspace,
+      destination,
     ],
     { env }
   );
-  git(['sparse-checkout', 'set', ...STUDIO_REPOSITORY.sparsePaths]);
+  run('git', ['sparse-checkout', 'set', ...STUDIO_REPOSITORY.sparsePaths], {
+    cwd: destination,
+    env,
+  });
+}
+
+export async function cloneWorkspace() {
+  if (hasWorkspace())
+    return { workspace: STUDIO_PATHS.workspace, cloned: false };
+  const env = buildGitAuthEnvironment(await createMonorepoReadToken());
+  const partialWorkspace = `${STUDIO_PATHS.workspace}${PARTIAL_WORKSPACE_SUFFIX}`;
+  rmSync(partialWorkspace, { recursive: true, force: true });
+  mkdirSync(dirname(STUDIO_PATHS.workspace), { recursive: true });
+  try {
+    downloadWorkspace(partialWorkspace, env);
+  } catch (error) {
+    rmSync(partialWorkspace, { recursive: true, force: true });
+    throw new StudioError(
+      `No se pudo descargar el código. ${readStderrTail(error)}`,
+      RETRY_HINT
+    );
+  }
+  renameSync(partialWorkspace, STUDIO_PATHS.workspace);
   return { workspace: STUDIO_PATHS.workspace, cloned: true };
 }
 
@@ -87,7 +120,7 @@ export async function updateWorkspace() {
     );
   }
   try {
-    git(['merge', '--ff-only', `origin/${STUDIO_REPOSITORY.branch}`]);
+    git(['merge', '--ff-only', `origin/${STUDIO_REPOSITORY.branch}`], env);
   } catch {
     throw new StudioError(
       'Hay cambios locales fuera de los prototipos que chocan con la versión nueva.',
@@ -122,8 +155,6 @@ export async function addReferenceApp(app: string) {
   };
 }
 
-const INSTALL_ERROR_TAIL_LENGTH = 1200;
-
 export function installDesignApp() {
   requireWorkspace();
   try {
@@ -138,15 +169,9 @@ export function installDesignApp() {
       { cwd: STUDIO_PATHS.workspace }
     );
   } catch (error) {
-    const stderr =
-      typeof error === 'object' && error !== null && 'stderr' in error
-        ? String((error as { stderr: unknown }).stderr)
-        : '';
     throw new StudioError(
-      `No se pudieron instalar las dependencias. ${stderr.slice(
-        -INSTALL_ERROR_TAIL_LENGTH
-      )}`,
-      'Revisa tu conexión y vuelve a intentar. Si se repite, avisa a tech con este mensaje.'
+      `No se pudieron instalar las dependencias. ${readStderrTail(error)}`,
+      RETRY_HINT
     );
   }
   return {
@@ -156,6 +181,9 @@ export function installDesignApp() {
 }
 
 export async function syncWorkspace() {
+  if (hasWorkspace() && !hasDesignApp()) {
+    rmSync(STUDIO_PATHS.workspace, { recursive: true, force: true });
+  }
   if (!hasWorkspace()) {
     await cloneWorkspace();
     return { action: 'cloned', commit: git(['rev-parse', '--short', 'HEAD']) };
