@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { type ChildProcess, spawn } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -16,6 +16,16 @@ import {
   STUDIO_SERVER,
 } from './studio-config.ts';
 import { StudioError } from './studio-output.ts';
+
+type DesignAppStart = 'ready' | 'exited' | 'timeout';
+
+const DESIGN_APP_START_FAILURES: Record<
+  Exclude<DesignAppStart, 'ready'>,
+  string
+> = {
+  exited: 'La app de diseño se cerró al arrancar.',
+  timeout: 'La app de diseño no respondió a tiempo.',
+};
 
 const designAppUrl = (path = '') =>
   `http://localhost:${STUDIO_DESIGN_APP.port}${path}`;
@@ -37,9 +47,9 @@ function readServerPid() {
   return Number.isInteger(pid) && pid > 0 ? pid : null;
 }
 
-function startDesignApp() {
+function startDesignApp(attempt: number) {
   mkdirSync(STUDIO_HOME, { recursive: true });
-  const log = openSync(STUDIO_PATHS.serverLog, 'w');
+  const log = openSync(STUDIO_PATHS.serverLog, attempt === 1 ? 'w' : 'a');
   const child = spawn(
     'pnpm',
     ['--filter', STUDIO_DESIGN_APP.packageName, 'dev'],
@@ -52,31 +62,47 @@ function startDesignApp() {
   );
   child.unref();
   if (child.pid) writeFileSync(STUDIO_PATHS.serverPid, String(child.pid));
+  return child;
 }
 
-async function waitForDesignApp() {
+const hasExited = (child: ChildProcess) =>
+  child.exitCode !== null || child.signalCode !== null;
+
+async function waitForDesignApp(child: ChildProcess): Promise<DesignAppStart> {
   const deadline = Date.now() + STUDIO_SERVER.startTimeoutMs;
   while (Date.now() < deadline) {
-    if (await isDesignAppResponding()) return true;
+    if (await isDesignAppResponding()) return 'ready';
+    if (hasExited(child)) return 'exited';
     await wait(STUDIO_SERVER.pollIntervalMs);
   }
-  return false;
+  return 'timeout';
+}
+
+async function startDesignAppWithRetries() {
+  let start: DesignAppStart = 'exited';
+  let attempts = 0;
+  while (start === 'exited' && attempts < STUDIO_SERVER.startAttempts) {
+    attempts += 1;
+    start = await waitForDesignApp(startDesignApp(attempts));
+  }
+  return { start, attempts };
 }
 
 export async function serveDesignApp() {
   if (await isDesignAppResponding()) {
     return { running: true, started: false, url: designAppUrl('/prototipos') };
   }
-  startDesignApp();
-  if (!(await waitForDesignApp())) {
+  const { start, attempts } = await startDesignAppWithRetries();
+  if (start !== 'ready') {
     throw new StudioError(
-      'La app de diseño no respondió a tiempo.',
+      DESIGN_APP_START_FAILURES[start],
       `Revisa el registro en ${STUDIO_PATHS.serverLog} o vuelve a intentar.`
     );
   }
   return {
     running: true,
     started: true,
+    attempts,
     url: designAppUrl('/prototipos'),
     log: STUDIO_PATHS.serverLog,
   };
