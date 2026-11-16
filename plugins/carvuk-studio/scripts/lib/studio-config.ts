@@ -65,8 +65,22 @@ export const STUDIO_LOGIN = {
 } as const;
 
 export const STUDIO_SCREENSHOT_VIEWPORTS = {
-  desktop: { width: 1440, height: 900 },
-  mobile: { width: 390, height: 844 },
+  desktop: { width: 1440, height: 900, mobile: false },
+  mobile: { width: 390, height: 844, mobile: true },
+} as const;
+
+export const STUDIO_SCREENSHOT = {
+  deviceScaleFactor: 2,
+  navigationTimeoutMs: 60_000,
+  settleMs: 1_000,
+} as const;
+
+export const STUDIO_HEADLESS_CHROME = {
+  startTimeoutMs: 15_000,
+  stopTimeoutMs: 5_000,
+  pollIntervalMs: 100,
+  profilePrefix: 'carvuk-studio-chrome-',
+  portFile: 'DevToolsActivePort',
 } as const;
 
 export const STUDIO_CHROME_PATHS = [
