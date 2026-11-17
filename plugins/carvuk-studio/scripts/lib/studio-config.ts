@@ -58,6 +58,20 @@ export const STUDIO_DESIGN_APP = {
     `apps/carvuk-app-design/src/pages/prototipos/${slug}.tsx`,
 } as const;
 
+export const STUDIO_PROTOTYPE_IMAGES = {
+  directory: (slug: string) => `apps/carvuk-app-design/public/prototipos/${slug}`,
+  publicPath: (slug: string, file: string) => `/prototipos/${slug}/${file}`,
+  extension: '.webp',
+  filePattern: /\.(webp|png|jpe?g)$/,
+  namePattern: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  maxWidth: 1600,
+  qualities: [80, 70, 60, 50],
+  maxBytes: 500_000,
+  maxTotalBytes: 2_400_000,
+  maxImages: 8,
+  downloadTimeoutMs: 60_000,
+} as const;
+
 export const STUDIO_LOGIN = {
   timeoutMs: 5 * 60 * 1000,
   callbackPath: '/callback',

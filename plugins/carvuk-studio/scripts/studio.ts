@@ -19,6 +19,7 @@ import {
   stopDesignApp,
 } from './lib/studio-server.ts';
 import { clearStudioSession } from './lib/studio-session.ts';
+import { savePrototypeImage } from './lib/studio-images.ts';
 import { submitPrototype } from './lib/studio-submit.ts';
 import {
   addReferenceApp,
@@ -81,6 +82,12 @@ const COMMANDS: Record<string, StudioCommand> = {
       requireSlug(requireFlag(args, 'slug')),
       readFlag(args, 'path') ?? undefined
     ),
+  image: async (args) =>
+    savePrototypeImage({
+      slug: requireSlug(requireFlag(args, 'slug')),
+      name: requireFlag(args, 'name'),
+      from: requireFlag(args, 'from'),
+    }),
   submit: async (args) => submitPrototype(requireFlag(args, 'manifest')),
 };
 

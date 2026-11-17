@@ -2,11 +2,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 
 import { studioRequest } from './studio-api.ts';
+import { listPrototypeImages } from './studio-images.ts';
 import {
   STUDIO_API_PATHS,
   STUDIO_API_URL,
   STUDIO_DESIGN_APP,
   STUDIO_PATHS,
+  STUDIO_PROTOTYPE_IMAGES,
 } from './studio-config.ts';
 import { StudioError } from './studio-output.ts';
 
@@ -47,12 +49,35 @@ function collectPrototypeFiles(slug: string) {
   const directories = STUDIO_DESIGN_APP.prototypeDirectories(slug).map(
     (directory) => join(STUDIO_PATHS.workspace, directory)
   );
-  return [join(STUDIO_PATHS.workspace, page), ...directories.flatMap(listFiles)]
+  const textFiles = [
+    join(STUDIO_PATHS.workspace, page),
+    ...directories.flatMap(listFiles),
+  ]
     .filter((path) => TEXT_EXTENSIONS.test(path))
     .map((path) => ({
       path: relative(STUDIO_PATHS.workspace, path),
       content: readFileSync(path, 'utf8'),
     }));
+  return [...textFiles, ...collectPrototypeImages(slug)];
+}
+
+function collectPrototypeImages(slug: string) {
+  const images = listPrototypeImages(slug).map((path) => ({
+    path: relative(STUDIO_PATHS.workspace, path),
+    bytes: readFileSync(path),
+  }));
+  const totalBytes = images.reduce((total, { bytes }) => total + bytes.byteLength, 0);
+  if (totalBytes > STUDIO_PROTOTYPE_IMAGES.maxTotalBytes) {
+    throw new StudioError(
+      'Las fotos del prototipo pesan más de 2,4 MB en total.',
+      'Quita alguna foto o reemplázala por una más simple.'
+    );
+  }
+  return images.map(({ path, bytes }) => ({
+    path,
+    content: bytes.toString('base64'),
+    encoding: 'base64' as const,
+  }));
 }
 
 function readManifest(manifestPath: string): StudioPrototypeManifest {
