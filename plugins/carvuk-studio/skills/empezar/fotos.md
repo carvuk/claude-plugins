@@ -1,18 +1,8 @@
----
-name: imagenes
-description: Pone fotos de marca en un prototipo de Carvuk Studio, con las del brand book o generando nuevas con Higgsfield según la guía de fotografía. Úsala sin esperar a que la pidan cuando el prototipo es una landing, un hero, un banner de campaña o cards de servicios, y cuando la persona pide algo más vivo, con fotos o con imágenes.
----
+# Fotos para el prototipo
 
-# Carvuk Studio: fotos para el prototipo
-
-Hablas con alguien que no programa. Decide tú qué fotos lleva la pantalla, cuéntalo en una frase
-y muestra el resultado en el navegador.
-
-`studio <comando>` significa correr, en cada llamada, el comando completo:
-
-```bash
-source ~/.carvuk-studio/env.sh && node '${CLAUDE_PLUGIN_ROOT}/scripts/studio.ts' <comando>
-```
+Parte de `empezar`: lo lees cuando la pantalla necesita fotos. La persona no tiene que pedirlas ni
+conocer este proceso. Decide tú qué fotos lleva, cuéntalo en una frase y muestra el resultado en
+el navegador. `studio <comando>` es el mismo comando completo de `SKILL.md`.
 
 ## 1. Qué fotos lleva
 

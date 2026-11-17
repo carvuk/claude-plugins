@@ -10,8 +10,7 @@ real en su Mac y se las mande a tech como pedido, sin cuenta de GitHub ni conoci
   3. design system ─▶ descarga la primera vez; después trae lo último de staging
   4. app           ─▶ pregunta en qué app trabajar y la usa como referencia
   5. en vivo       ─▶ localhost:3010/prototipos en tu navegador, Desktop o Mobile
-/carvuk-studio:imagenes
-  └─▶ fotos del brand book o nuevas con Higgsfield, sola cuando la pantalla las necesita
+     fotos         ─▶ del brand book o nuevas con Higgsfield, cuando la pantalla las necesita
 /carvuk-studio:enviar
   └─▶ recién aquí: ticket en carvuk.dev + rama preview/ con PR draft y la demostración real
 ```

@@ -78,8 +78,9 @@ Trabaja en `~/Carvuk/carvuk-monorepo`. Antes de escribir código, lee su `AGENTS
    Copia la forma de `ejemplo-mantencion`: la página exporta
    `getStaticProps = getPrototypeStaticProps` y no usa `getLayout`.
 
-   Si es una landing, un hero, un banner de campaña o cards de servicios, o si pide algo más vivo,
-   pon fotos con la skill `imagenes` sin esperar a que las pida.
+   Puedes poner fotos de marca: del brand book o nuevas con Higgsfield. Si es una landing, un
+   hero, un banner de campaña o cards de servicios, o si pide algo más vivo, ponlas sin esperar a
+   que las pida, siguiendo [fotos.md](fotos.md).
 
 2. Ábrelo en su navegador con `studio open --slug <slug>`. Usa el navegador por defecto; si la
    persona prefiere otro de `browsers` (Chrome, Arc, Brave, Safari, Edge, Firefox), agrega
