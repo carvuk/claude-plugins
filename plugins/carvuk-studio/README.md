@@ -10,6 +10,8 @@ real en su Mac y se las mande a tech como pedido, sin cuenta de GitHub ni conoci
   3. design system ─▶ descarga la primera vez; después trae lo último de staging
   4. app           ─▶ pregunta en qué app trabajar y la usa como referencia
   5. en vivo       ─▶ localhost:3010/prototipos en tu navegador, Desktop o Mobile
+/carvuk-studio:imagenes
+  └─▶ fotos del brand book o nuevas con Higgsfield, sola cuando la pantalla las necesita
 /carvuk-studio:enviar
   └─▶ recién aquí: ticket en carvuk.dev + rama preview/ con PR draft y la demostración real
 ```
@@ -30,23 +32,31 @@ Claude usa siempre los componentes y tokens del design system. Si pides algo dis
 propone la alternativa que existe; si insistes, lo hace y lo deja anotado para tech. Tu prototipo
 nunca llega a producción tal cual: tech lo usa como especificación exacta.
 
+Las landings, los heroes, los banners y las cards de servicios llevan fotos sin que las pidas.
+Claude usa primero las del [brand book](https://design.carvuk.com/v1/fotografia.json). Si ninguna
+calza y tienes Higgsfield conectado en Claude (Configuración → Conectores), genera fotos nuevas
+con la guía de fotografía de marca, gastando unos 2 créditos por foto. Antes de pasar de 20
+créditos te pregunta.
+
 ## Para el admin
 
 | Paso                                    | Dónde                                                                                                                                           |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Distribuir el plugin                    | claude.ai → Organization settings → Plugins & skills, sincronizando `carvuk/claude-plugins` (catálogo en `.claude-plugin/marketplace.json`) |
+| Distribuir el plugin                    | Repo público `carvuk/claude-plugins` (catálogo en `.claude-plugin/marketplace.json`); cada persona lo instala como se explica abajo          |
 | Secreto de tokens                       | `STUDIO_TOKEN_SECRET` en el proyecto de Vercel de carvuk.dev, 32 caracteres o más                                                               |
 | Permisos de la GitHub App de carvuk.dev | `contents: write` y `pull_requests: write` en `carvuk-monorepo`                                                                                 |
 | Requisitos de cada Mac                  | macOS, 5 GB libres y cuenta @carvuk.com con acceso completo al portal de pedidos; Chrome, Brave, Arc o Edge para pantallazos                    |
 
-Quien tenga acceso al repo puede instalarlo sin esperar la sincronización, desde Claude Code:
+Con cuentas personales de Claude, cada persona lo instala en la pestaña Code de Claude Desktop,
+en una sesión local de su Mac. El repo es público, así que no necesita GitHub:
 
 ```text
-/plugin install carvuk-studio --marketplace carvuk/claude-plugins
+/plugin marketplace add carvuk/claude-plugins
 ```
 
-La sincronización lee el repo con la conexión de GitHub de la organización, así que las personas
-no necesitan acceso al repo. El plugin descarga el monorepo en cada Mac con un token de lectura de
+Después, botón **+** junto al cuadro de texto → **Add plugins** → **carvuk-studio** → **Install**.
+En Claude Code por terminal, `/plugin install carvuk-studio@carvuk`. Para comprobarlo, en una
+conversación nueva `/carvuk` debe mostrar `/carvuk-studio:empezar`. El plugin descarga el monorepo en cada Mac con un token de lectura de
 carvuk.dev; las reglas de prototipos y del design system viven allá, en el `AGENTS.md` de
 [`apps/carvuk-app-design`](https://github.com/carvuk/carvuk-monorepo/blob/main/apps/carvuk-app-design/AGENTS.md). Los detalles de la API y del token están en
 [`carvuk-app-dev/docs/carvuk-studio.md`](https://github.com/carvuk/carvuk-app-dev/blob/main/docs/carvuk-studio.md).
@@ -57,8 +67,9 @@ carvuk.dev; las reglas de prototipos y del design system viven allá, en el `AGE
   de pedidos de carvuk.dev y se revoca para todos rotando `STUDIO_TOKEN_SECRET`.
 - Para descargar código, carvuk.dev entrega un token de GitHub de sólo lectura que dura una hora y
   no se guarda. La Mac nunca recibe permisos de escritura sobre GitHub.
-- carvuk.dev sólo acepta archivos de las carpetas del prototipo y los sube a una rama
-  `preview/prototipo-*` con una PR draft. El merge sigue el flujo normal de review.
+- carvuk.dev sólo acepta archivos de las carpetas del prototipo, más hasta 8 fotos de 500 KB en
+  `public/prototipos/<slug>/`, y los sube a una rama `preview/prototipo-*` con una PR draft. El
+  merge sigue el flujo normal de review.
 - No se descargan variables de entorno ni secretos: los prototipos usan datos de ejemplo.
 
 ## Cómo funciona por dentro
@@ -81,7 +92,8 @@ carvuk.dev; las reglas de prototipos y del design system viven allá, en el `AGE
   | `reference --app <app>`                            | Agrega una app al clon, sólo como referencia                             |
   | `open --slug <s> [--vista mobile] [--browser Arc]` | Abre el visor en el navegador por defecto o el elegido                   |
   | `screenshot --slug <s>`                            | Pantallazos desktop y mobile con un navegador Chromium headless          |
-  | `submit --manifest <json>`                         | Sube los pantallazos y envía el prototipo                                |
+  | `image --slug <s> --name <n> --from <url\|ruta>`   | Guarda una foto en webp en `public/prototipos/<s>/` y devuelve su `src`  |
+  | `submit --manifest <json>`                         | Sube los pantallazos y envía el prototipo con sus fotos                  |
 
 - Variables para probar: `CARVUK_STUDIO_API_URL`, `CARVUK_STUDIO_HOME` y
   `CARVUK_STUDIO_WORKSPACE`. Los tipos se revisan con `npm run typecheck` en la raíz de este repo.

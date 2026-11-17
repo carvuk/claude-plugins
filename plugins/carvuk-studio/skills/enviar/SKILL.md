@@ -52,6 +52,8 @@ Completa `~/.carvuk-studio/pedidos/<slug>.json`, que empezó en `/carvuk-studio:
 - `area` es opcional: `seguros`, `campanas`, `finanzas`, `ops`, `b2b`, `gps`, `bots`, `infra` o
   `marketing`. `priority` es opcional, un entero desde 1.
 - `screenshots` puede ir vacío. Hasta 12 pantallazos de 4 MB cada uno.
+- Las fotos de `apps/carvuk-app-design/public/prototipos/<slug>/` se envían solas con el
+  prototipo: hasta 8, de 500 KB cada una. Las del brand book ya están en el repo y no se envían.
 
 Muestra el título, el resumen, la app, las decisiones, las preguntas abiertas y los pantallazos.
 Pregunta: «¿Lo envío a tech así?». Ajusta lo que pida.

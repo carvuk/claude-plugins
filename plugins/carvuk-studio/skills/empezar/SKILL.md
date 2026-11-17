@@ -73,9 +73,13 @@ Trabaja en `~/Carvuk/carvuk-monorepo`. Antes de escribir código, lee su `AGENTS
    - `apps/carvuk-app-design/src/pages/prototipos/<slug>.tsx`
    - `apps/carvuk-app-design/src/components/prototipos/<slug>/`
    - `apps/carvuk-app-design/src/lib/prototipos/<slug>/`
+   - `apps/carvuk-app-design/public/prototipos/<slug>/`, sólo para fotos, con `studio image`
 
    Copia la forma de `ejemplo-mantencion`: la página exporta
    `getStaticProps = getPrototypeStaticProps` y no usa `getLayout`.
+
+   Si es una landing, un hero, un banner de campaña o cards de servicios, o si pide algo más vivo,
+   pon fotos con la skill `imagenes` sin esperar a que las pida.
 
 2. Ábrelo en su navegador con `studio open --slug <slug>`. Usa el navegador por defecto; si la
    persona prefiere otro de `browsers` (Chrome, Arc, Brave, Safari, Edge, Firefox), agrega
@@ -100,6 +104,8 @@ Trabaja en `~/Carvuk/carvuk-monorepo`. Antes de escribir código, lee su `AGENTS
   «Pidió salir del design system: …», para que tech lo vea.
 - Datos falsos pero creíbles en `src/lib/prototipos/<slug>/constants/`. Sin fetch, queries,
   services ni variables de entorno.
+- Las fotos van con `next/image`: las del brand book desde `/brand/images/photography/` y las
+  nuevas desde `/prototipos/<slug>/`. Nunca uses URLs externas.
 - Convenciones del repo: TypeScript, `type` y no `interface`, nombres en inglés, copy en español de
   Chile, archivos de 300 líneas como máximo y sin comentarios.
 
