@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import {
   createServer,
   type IncomingMessage,
@@ -23,14 +23,39 @@ const MAX_BODY_BYTES = 16_384;
 
 function readBody(request: IncomingMessage) {
   return new Promise<string>((resolve, reject) => {
-    let body = '';
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    let settled = false;
+
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
+
     request.on('data', (chunk: Buffer) => {
-      body += chunk.toString('utf8');
-      if (body.length > MAX_BODY_BYTES) reject(new Error('Body too large'));
+      totalBytes += chunk.byteLength;
+      if (totalBytes > MAX_BODY_BYTES) {
+        request.destroy();
+        fail(new Error('Body too large'));
+        return;
+      }
+      chunks.push(chunk);
     });
-    request.on('end', () => resolve(body));
-    request.on('error', reject);
+    request.on('end', () => {
+      if (settled) return;
+      settled = true;
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+    request.on('error', fail);
   });
+}
+
+function statesMatch(actual: string | null, expected: string) {
+  if (!actual) return false;
+  const actualBuf = Buffer.from(actual, 'utf8');
+  const expectedBuf = Buffer.from(expected, 'utf8');
+  return actualBuf.length === expectedBuf.length && timingSafeEqual(actualBuf, expectedBuf);
 }
 
 function parseCallback(body: string, expectedState: string) {
@@ -38,7 +63,7 @@ function parseCallback(body: string, expectedState: string) {
   const token = fields.get('token');
   const email = fields.get('email');
   const expiresAt = fields.get('expiresAt');
-  if (fields.get('state') !== expectedState || !token || !email || !expiresAt)
+  if (!statesMatch(fields.get('state'), expectedState) || !token || !email || !expiresAt)
     return null;
   const session: StudioSession = { email, expiresAt };
   return { token, session };
@@ -55,8 +80,14 @@ export function loginToStudio() {
   return new Promise<StudioSession & { authorizeUrl: string }>(
     (resolve, reject) => {
       let authorizeUrl = '';
+      let completed = false;
+
       const server = createServer(
         async (request: IncomingMessage, response: ServerResponse) => {
+          if (completed) {
+            response.writeHead(409).end();
+            return;
+          }
           if (
             request.method !== 'POST' ||
             request.url !== STUDIO_LOGIN.callbackPath
@@ -74,17 +105,29 @@ export function loginToStudio() {
               .end('Solicitud inválida.');
             return;
           }
-          saveStudioSession(callback.token, callback.session);
+          completed = true;
+          clearTimeout(timeout);
+          try {
+            saveStudioSession(callback.token, callback.session);
+          } catch (error) {
+            response
+              .writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' })
+              .end('No se pudo guardar la sesión.');
+            server.close();
+            reject(error);
+            return;
+          }
           response
             .writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
             .end(SUCCESS_PAGE);
-          clearTimeout(timeout);
           server.close();
           resolve({ ...callback.session, authorizeUrl });
         }
       );
 
       const timeout = setTimeout(() => {
+        if (completed) return;
+        completed = true;
         server.close();
         reject(
           new StudioError(
@@ -93,6 +136,13 @@ export function loginToStudio() {
           )
         );
       }, STUDIO_LOGIN.timeoutMs);
+
+      server.on('error', (error) => {
+        if (completed) return;
+        completed = true;
+        clearTimeout(timeout);
+        reject(error);
+      });
 
       server.listen(0, STUDIO_LOGIN.host, () => {
         const { port } = server.address() as AddressInfo;

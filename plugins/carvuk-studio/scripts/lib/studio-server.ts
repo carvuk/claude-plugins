@@ -1,5 +1,6 @@
 import { type ChildProcess, spawn } from 'node:child_process';
 import {
+  closeSync,
   existsSync,
   mkdirSync,
   openSync,
@@ -50,16 +51,21 @@ function readServerPid() {
 function startDesignApp(attempt: number) {
   mkdirSync(STUDIO_HOME, { recursive: true });
   const log = openSync(STUDIO_PATHS.serverLog, attempt === 1 ? 'w' : 'a');
-  const child = spawn(
-    'pnpm',
-    ['--filter', STUDIO_DESIGN_APP.packageName, 'dev'],
-    {
-      cwd: STUDIO_PATHS.workspace,
-      detached: true,
-      stdio: ['ignore', log, log],
-      env: process.env,
-    }
-  );
+  let child: ChildProcess;
+  try {
+    child = spawn(
+      'pnpm',
+      ['--filter', STUDIO_DESIGN_APP.packageName, 'dev'],
+      {
+        cwd: STUDIO_PATHS.workspace,
+        detached: true,
+        stdio: ['ignore', log, log],
+        env: process.env,
+      }
+    );
+  } finally {
+    closeSync(log);
+  }
   child.unref();
   if (child.pid) writeFileSync(STUDIO_PATHS.serverPid, String(child.pid));
   return child;

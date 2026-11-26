@@ -3,6 +3,7 @@ import { basename, join, relative } from 'node:path';
 
 import { studioRequest } from './studio-api.ts';
 import { listPrototypeImages } from './studio-images.ts';
+import { requireSlug } from './studio-prepare.ts';
 import {
   STUDIO_API_PATHS,
   STUDIO_API_URL,
@@ -126,7 +127,8 @@ async function uploadScreenshot({ label, file }: StudioScreenshotInput) {
 
 export async function submitPrototype(manifestPath: string) {
   const { screenshots, ...manifest } = readManifest(manifestPath);
-  const files = collectPrototypeFiles(manifest.slug);
+  const slug = requireSlug(manifest.slug);
+  const files = collectPrototypeFiles(slug);
   const uploadedScreenshots = [];
   for (const screenshot of screenshots) {
     uploadedScreenshots.push(await uploadScreenshot(screenshot));
