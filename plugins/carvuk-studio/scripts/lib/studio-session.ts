@@ -125,7 +125,8 @@ export function requireStudioToken() {
       'Corre /carvuk-studio:empezar para conectarte.'
     );
   }
-  if (new Date(session.expiresAt).getTime() <= Date.now()) {
+  const expiresAtMs = Date.parse(session.expiresAt);
+  if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
     throw new StudioError(
       'La sesión de Carvuk Studio expiró.',
       'Corre /carvuk-studio:empezar para conectarte de nuevo.'

@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import {
   STUDIO_DESIGN_APP,
@@ -100,7 +100,7 @@ function requireImageName(name: string) {
 
 function requireRoomFor(slug: string, file: string) {
   const existing = listPrototypeImages(slug);
-  const replacing = existing.some((path) => path.endsWith(`/${file}`));
+  const replacing = existing.some((filePath) => basename(filePath) === file);
   if (!replacing && existing.length >= STUDIO_PROTOTYPE_IMAGES.maxImages) {
     throw new StudioError(
       `El prototipo ya tiene ${STUDIO_PROTOTYPE_IMAGES.maxImages} imágenes.`,
